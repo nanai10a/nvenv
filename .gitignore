@@ -4,3 +4,11 @@ node_modules/
 test-env/
 venv/
 .nvenv-test/
+
+# Test artifacts
+test/.test-*
+test-ci-env/
+test-publish-env/
+test-bun-env/
+*.tgz
+base/
