@@ -20,7 +20,7 @@
     "environment",
     "gradle"
   ],
-  "author": "",
+  "author": "Nanai Jua <me@n7i.dev>",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
