@@ -22,6 +22,14 @@
   ],
   "author": "Nanai Jua <me@n7i.dev>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nanai10a/nvenv.git"
+  },
+  "homepage": "https://github.com/nanai10a/nvenv#readme",
+  "bugs": {
+    "url": "https://github.com/nanai10a/nvenv/issues"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
