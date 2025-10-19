@@ -1,0 +1,141 @@
+name: Package Size Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  size-check:
+    name: Check package size
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Pack current version
+        id: current
+        run: |
+          npm pack
+          CURRENT_FILE=$(ls nvenv-*.tgz)
+          CURRENT_SIZE=$(stat -f%z "$CURRENT_FILE" 2>/dev/null || stat -c%s "$CURRENT_FILE")
+          CURRENT_SIZE_KB=$((CURRENT_SIZE / 1024))
+          echo "file=$CURRENT_FILE" >> $GITHUB_OUTPUT
+          echo "size=$CURRENT_SIZE" >> $GITHUB_OUTPUT
+          echo "size_kb=$CURRENT_SIZE_KB" >> $GITHUB_OUTPUT
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - name: Pack base version
+        id: base
+        run: |
+          cd base
+          npm pack
+          BASE_FILE=$(ls nvenv-*.tgz)
+          BASE_SIZE=$(stat -f%z "$BASE_FILE" 2>/dev/null || stat -c%s "$BASE_FILE")
+          BASE_SIZE_KB=$((BASE_SIZE / 1024))
+          echo "file=$BASE_FILE" >> $GITHUB_OUTPUT
+          echo "size=$BASE_SIZE" >> $GITHUB_OUTPUT
+          echo "size_kb=$BASE_SIZE_KB" >> $GITHUB_OUTPUT
+
+      - name: Calculate size difference
+        id: diff
+        run: |
+          CURRENT_SIZE=${{ steps.current.outputs.size }}
+          BASE_SIZE=${{ steps.base.outputs.size }}
+          DIFF=$((CURRENT_SIZE - BASE_SIZE))
+          DIFF_KB=$((DIFF / 1024))
+          PERCENT=$(awk "BEGIN {printf \"%.1f\", ($DIFF / $BASE_SIZE) * 100}")
+
+          echo "diff=$DIFF" >> $GITHUB_OUTPUT
+          echo "diff_kb=$DIFF_KB" >> $GITHUB_OUTPUT
+          echo "percent=$PERCENT" >> $GITHUB_OUTPUT
+
+      - name: Check size threshold
+        id: threshold
+        run: |
+          CURRENT_KB=${{ steps.current.outputs.size_kb }}
+          THRESHOLD_KB=50
+
+          if [ $CURRENT_KB -gt $THRESHOLD_KB ]; then
+            echo "exceeded=true" >> $GITHUB_OUTPUT
+            echo "::warning::Package size ($CURRENT_KB KB) exceeds threshold ($THRESHOLD_KB KB)"
+          else
+            echo "exceeded=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: List package contents
+        run: |
+          echo "## Current package contents"
+          tar -tzf ${{ steps.current.outputs.file }} | head -20
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const currentSize = ${{ steps.current.outputs.size_kb }};
+            const baseSize = ${{ steps.base.outputs.size_kb }};
+            const diffKB = ${{ steps.diff.outputs.diff_kb }};
+            const percent = '${{ steps.diff.outputs.percent }}';
+            const exceeded = '${{ steps.threshold.outputs.exceeded }}' === 'true';
+
+            const icon = diffKB > 0 ? '📈' : diffKB < 0 ? '📉' : '➡️';
+            const warning = exceeded ? '\n\n⚠️ **Warning**: Package size exceeds 50 KB threshold!' : '';
+
+            const body = `## 📦 Package Size Report
+
+            | Metric | Value |
+            |--------|-------|
+            | Current Size | ${currentSize} KB |
+            | Base Size | ${baseSize} KB |
+            | Difference | ${icon} ${diffKB > 0 ? '+' : ''}${diffKB} KB (${percent}%) |
+            ${warning}
+
+            <details>
+            <summary>Package contents (first 20 files)</summary>
+
+            \`\`\`
+            ${await exec.getExecOutput('tar', ['-tzf', '${{ steps.current.outputs.file }}']).then(r => r.stdout.split('\n').slice(0, 20).join('\n'))}
+            \`\`\`
+            </details>
+            `;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Package Size Report')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
