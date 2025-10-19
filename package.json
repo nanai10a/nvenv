@@ -1,0 +1,30 @@
+{
+  "name": "nvenv",
+  "version": "0.1.0",
+  "description": "Python venv-like Node.js environment manager - project-local Node.js installation without global environment pollution",
+  "main": "src/cli.js",
+  "bin": {
+    "nvenv": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "keywords": [
+    "node",
+    "nodejs",
+    "version",
+    "manager",
+    "venv",
+    "virtualenv",
+    "local",
+    "environment",
+    "gradle"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

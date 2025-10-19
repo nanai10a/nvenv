@@ -1,0 +1,8 @@
+test/
+test-env/
+venv/
+.nvenv-test/
+*.log
+.DS_Store
+perplexity-report.md
+mise.toml
