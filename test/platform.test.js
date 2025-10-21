@@ -84,5 +84,19 @@ describe('platform module', () => {
       assert.strictEqual(info.extension, expectedExt);
       assert.ok(info.url.endsWith(`.${expectedExt}`));
     });
+
+    it('should use "win" not "win32" in Windows filenames', () => {
+      const info = getNodeDownloadInfo('18.20.0');
+
+      if (process.platform === 'win32') {
+        // On Windows, filename should use 'win' not 'win32'
+        assert.ok(info.filename.includes('-win-'));
+        assert.ok(!info.filename.includes('-win32-'));
+        assert.ok(info.url.includes('/node-v18.20.0-win-'));
+      } else {
+        // On Unix, should use platform name as-is
+        assert.ok(info.filename.includes(`-${process.platform}-`));
+      }
+    });
   });
 });
