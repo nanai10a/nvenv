@@ -34,9 +34,9 @@ async function extractArchive(archivePath, destDir) {
     } else if (ext === '.zip') {
       // Extract zip using unzip command (Unix) or PowerShell (Windows)
       if (process.platform === 'win32') {
-        // Windows: use PowerShell
+        // Windows: use PowerShell with LiteralPath and Force flags
         execSync(
-          `powershell -command "Expand-Archive -Path '${archivePath}' -DestinationPath '${destDir}'"`,
+          `powershell.exe -NoProfile -Command "Expand-Archive -LiteralPath '${archivePath}' -DestinationPath '${destDir}' -Force"`,
           { stdio: 'inherit' }
         );
       } else {
