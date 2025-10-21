@@ -61,7 +61,17 @@ function getNodeDownloadInfo(version) {
   // Normalize version (remove 'v' prefix if present)
   const normalizedVersion = version.startsWith('v') ? version.slice(1) : version;
 
-  const filename = `node-v${normalizedVersion}-${platform}-${arch}`;
+  // Map process.platform to Node.js distribution naming
+  // Windows uses 'win' not 'win32' in distribution filenames
+  const platformMap = {
+    'darwin': 'darwin',
+    'linux': 'linux',
+    'win32': 'win'
+  };
+
+  const distPlatform = platformMap[platform];
+
+  const filename = `node-v${normalizedVersion}-${distPlatform}-${arch}`;
   const url = `https://nodejs.org/dist/v${normalizedVersion}/${filename}.${ext}`;
 
   return {
