@@ -12,7 +12,8 @@ function parseArgs(args) {
   const parsed = {
     version: null,
     envPath: null,
-    help: false
+    help: false,
+    silent: false
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -20,6 +21,8 @@ function parseArgs(args) {
 
     if (arg === '-h' || arg === '--help') {
       parsed.help = true;
+    } else if (arg === '--silent' || arg === '-s') {
+      parsed.silent = true;
     } else if (arg.startsWith('--node=')) {
       parsed.version = arg.split('=')[1];
     } else if (!arg.startsWith('-')) {
@@ -46,6 +49,7 @@ Arguments:
 
 Options:
   --node=<version>    Node.js version to install (e.g., 18.16.0 or v18.16.0)
+  -s, --silent        Suppress progress output
   -h, --help          Show this help message
 
 Examples:
@@ -93,8 +97,13 @@ async function main() {
   // Resolve to absolute path
   const envPath = path.resolve(process.cwd(), parsed.envPath);
 
+  // Determine silent mode: CLI flag or environment variable
+  const silent = parsed.silent ||
+                 process.env.NVENV_SILENT === '1' ||
+                 process.env.NODE_ENV === 'test';
+
   try {
-    await createEnvironment(parsed.version, envPath);
+    await createEnvironment(parsed.version, envPath, { silent });
     process.exit(0);
   } catch (error) {
     console.error(`\nError: ${error.message}`);

@@ -5,21 +5,50 @@ const fs = require('fs');
 const path = require('path');
 
 /**
+ * Check if silent mode should be enabled
+ * @param {object} options - Options object
+ * @returns {boolean}
+ */
+function shouldBeSilent(options = {}) {
+  // Explicit option takes precedence
+  if (options.silent !== undefined) {
+    return options.silent;
+  }
+
+  // Check environment variable
+  if (process.env.NVENV_SILENT === '1' || process.env.NVENV_SILENT === 'true') {
+    return true;
+  }
+
+  // Check if running in test mode
+  if (process.env.NODE_ENV === 'test') {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Download a file from URL to destination with progress indicator
  * @param {string} url - URL to download from
  * @param {string} destPath - Destination file path
+ * @param {object} options - Options { silent: boolean }
  * @returns {Promise<void>}
  */
-function downloadFile(url, destPath) {
+function downloadFile(url, destPath, options = {}) {
   return new Promise((resolve, reject) => {
+    const silent = shouldBeSilent(options);
+
     // Create destination directory if it doesn't exist
     const destDir = path.dirname(destPath);
     if (!fs.existsSync(destDir)) {
       fs.mkdirSync(destDir, { recursive: true });
     }
 
-    console.log(`Downloading from: ${url}`);
-    console.log(`Saving to: ${destPath}`);
+    if (!silent) {
+      console.log(`Downloading from: ${url}`);
+      console.log(`Saving to: ${destPath}`);
+    }
 
     const file = fs.createWriteStream(destPath);
     let downloadedBytes = 0;
@@ -32,9 +61,11 @@ function downloadFile(url, destPath) {
         fs.unlinkSync(destPath);
 
         const redirectUrl = response.headers.location;
-        console.log(`Following redirect to: ${redirectUrl}`);
+        if (!silent) {
+          console.log(`Following redirect to: ${redirectUrl}`);
+        }
 
-        return downloadFile(redirectUrl, destPath)
+        return downloadFile(redirectUrl, destPath, options)
           .then(resolve)
           .catch(reject);
       }
@@ -51,7 +82,7 @@ function downloadFile(url, destPath) {
       response.on('data', (chunk) => {
         downloadedBytes += chunk.length;
 
-        if (totalBytes) {
+        if (!silent && totalBytes) {
           const percent = ((downloadedBytes / totalBytes) * 100).toFixed(1);
           const downloadedMB = (downloadedBytes / 1024 / 1024).toFixed(1);
           const totalMB = (totalBytes / 1024 / 1024).toFixed(1);
@@ -66,7 +97,9 @@ function downloadFile(url, destPath) {
 
       file.on('finish', () => {
         file.close();
-        console.log('\nDownload completed!');
+        if (!silent) {
+          console.log('\nDownload completed!');
+        }
         resolve();
       });
     });

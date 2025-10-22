@@ -7,7 +7,7 @@
     "nvenv": "./src/cli.js"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "NVENV_SILENT=1 node --test"
   },
   "keywords": [
     "node",
