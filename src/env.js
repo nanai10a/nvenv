@@ -96,16 +96,28 @@ function createBinSymlinks(envPath, nodePath, options = {}) {
   const nodeBinDir = path.join(nodePath, 'bin');
 
   // List of binaries to symlink
-  const binaries = ['node', 'npm', 'npx'];
+  // On Windows: node.exe, npm.cmd, npx.cmd
+  // On Unix: node, npm, npx
+  const binaries = process.platform === 'win32'
+    ? [
+        { name: 'node', source: 'node.exe' },
+        { name: 'npm', source: 'npm.cmd' },
+        { name: 'npx', source: 'npx.cmd' }
+      ]
+    : [
+        { name: 'node', source: 'node' },
+        { name: 'npm', source: 'npm' },
+        { name: 'npx', source: 'npx' }
+      ];
 
-  binaries.forEach(binary => {
-    const sourceBinary = path.join(nodeBinDir, binary);
-    const targetLink = path.join(binDir, binary);
+  binaries.forEach(({ name, source }) => {
+    const sourceBinary = path.join(nodeBinDir, source);
+    const targetLink = path.join(binDir, name);
 
     if (fs.existsSync(sourceBinary)) {
       createSymlink(sourceBinary, targetLink, options);
       if (!silent) {
-        console.log(`Created symlink: ${binary}`);
+        console.log(`Created symlink: ${name}`);
       }
     }
   });
