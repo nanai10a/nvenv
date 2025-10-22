@@ -74,7 +74,10 @@ describe('platform module', () => {
 
     it('should generate valid URL format', () => {
       const info = getNodeDownloadInfo('18.20.0');
-      assert.ok(info.url.startsWith('https://nodejs.org/dist/'));
+
+      // Check for correct base URL (either default or from NVENV_MIRROR)
+      const expectedBaseUrl = process.env.NVENV_MIRROR || 'https://nodejs.org/dist';
+      assert.ok(info.url.startsWith(expectedBaseUrl));
 
       // URL uses mapped platform name (win32 -> win, others stay the same)
       const expectedPlatformInUrl = process.platform === 'win32' ? 'win' : process.platform;
