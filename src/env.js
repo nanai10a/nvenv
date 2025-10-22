@@ -116,7 +116,18 @@ function createBinSymlinks(envPath, nodePath, options = {}) {
 
   files.forEach(file => {
     const sourcePath = path.join(nodeBinDir, file);
-    const stat = fs.statSync(sourcePath);
+
+    // Try to stat the file, skip if it doesn't exist or isn't accessible
+    // (broken symlinks, permission issues, etc.)
+    let stat;
+    try {
+      stat = fs.statSync(sourcePath);
+    } catch (error) {
+      if (!silent) {
+        console.warn(`Warning: Could not access ${file}: ${error.message}`);
+      }
+      return;
+    }
 
     // Skip directories
     if (!stat.isFile()) {
