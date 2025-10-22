@@ -30,7 +30,7 @@ jobs:
           version: latest
 
       - name: Run unit tests
-        run: node --test
+        run: npm test
 
       - name: Create test environment
         shell: bash
