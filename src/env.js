@@ -379,8 +379,40 @@ async function createEnvironment(version, envPath, options = {}) {
     console.log(`Installed Node.js to: ${libPath}`);
   }
 
-  // Create symlinks
-  createBinSymlinks(envPath, libPath, options);
+  // Windows: Copy entire Node.js installation to bin/ (Python venv approach)
+  // Unix: Create symlinks to executables in lib/
+  if (process.platform === 'win32') {
+    const binDir = path.join(envPath, 'bin');
+
+    // Remove existing bin directory contents (keep directory itself)
+    if (fs.existsSync(binDir)) {
+      const files = fs.readdirSync(binDir);
+      files.forEach(file => {
+        const filePath = path.join(binDir, file);
+        const stat = fs.statSync(filePath);
+        if (stat.isDirectory()) {
+          fs.rmSync(filePath, { recursive: true, force: true });
+        } else {
+          fs.unlinkSync(filePath);
+        }
+      });
+    }
+
+    // Copy all contents from lib/node-vX.X.X to bin/
+    const items = fs.readdirSync(libPath);
+    items.forEach(item => {
+      const srcPath = path.join(libPath, item);
+      const destPath = path.join(binDir, item);
+      fs.cpSync(srcPath, destPath, { recursive: true });
+    });
+
+    if (!silent) {
+      console.log('Copied Node.js installation to bin/ (Windows)');
+    }
+  } else {
+    // Unix: Create symlinks
+    createBinSymlinks(envPath, libPath, options);
+  }
 
   // Create activate scripts
   createActivateScripts(envPath, options);
