@@ -141,6 +141,89 @@ Benefits:
 
 Purpose: Future features like version upgrades, environment inspection.
 
+## Configuration and Environment Variables
+
+### Supported Environment Variables
+
+nvenv supports the following environment variables for configuration:
+
+#### `NVENV_SILENT`
+
+Suppresses verbose progress output during environment creation.
+
+**Values**: `1`, `true`, or any truthy value
+**Default**: `false` (verbose output enabled)
+**Scope**: Affects download progress, extraction messages, and all non-error output
+
+**Usage**:
+```bash
+NVENV_SILENT=1 npx nvenv --node=18.20.0 venv
+```
+
+**Implementation**: The `shouldBeSilent()` helper in all modules checks:
+1. Explicit `options.silent` parameter (takes precedence)
+2. `NVENV_SILENT` environment variable
+3. `NODE_ENV === 'test'` (auto-enables silent mode in tests)
+
+**Affected modules**: `src/download.js`, `src/extract.js`, `src/env.js`, `src/cli.js`
+
+#### `NVENV_MIRROR`
+
+Specifies a custom mirror URL for downloading Node.js binaries.
+
+**Values**: Any valid URL (without trailing slash)
+**Default**: `https://nodejs.org/dist`
+**Scope**: Affects download URL generation in `src/platform.js`
+
+**Usage**:
+```bash
+# China mirror (npmmirror/Taobao)
+NVENV_MIRROR=https://npmmirror.com/mirrors/node npx nvenv --node=18.20.0 venv
+
+# Tencent Cloud mirror
+NVENV_MIRROR=https://mirrors.cloud.tencent.com/nodejs-release npx nvenv --node=18.20.0 venv
+```
+
+**Implementation**: In `getNodeDownloadInfo()` function:
+```javascript
+const baseUrl = process.env.NVENV_MIRROR || 'https://nodejs.org/dist';
+const url = `${baseUrl}/v${normalizedVersion}/${filename}.${ext}`;
+```
+
+**URL Structure**: The mirror must follow the same directory structure as nodejs.org:
+```
+${NVENV_MIRROR}/v${version}/node-v${version}-${platform}-${arch}.${ext}
+```
+
+Example: `https://npmmirror.com/mirrors/node/v18.20.0/node-v18.20.0-darwin-arm64.tar.gz`
+
+**Popular Mirrors**:
+- **China (npmmirror)**: `https://npmmirror.com/mirrors/node`
+- **China (Tencent)**: `https://mirrors.cloud.tencent.com/nodejs-release`
+- **Corporate/Private**: Custom internal mirrors following the same structure
+
+**Performance Impact**: Using a geographically closer mirror can significantly reduce download times:
+- Official nodejs.org: ~30-60 seconds for 40MB binary
+- Regional mirror: ~5-15 seconds for the same binary
+- Results vary based on network conditions and mirror performance
+
+### CLI Flags
+
+In addition to environment variables, nvenv supports these command-line flags:
+
+- `--node=<version>`: Node.js version to install (required)
+- `--silent` or `-s`: Suppress progress output (same as `NVENV_SILENT=1`)
+- `--help` or `-h`: Show help message
+
+### Configuration Priority
+
+When multiple configuration sources are present, the priority order is:
+
+1. CLI flags (e.g., `--silent`)
+2. Environment variables (e.g., `NVENV_SILENT=1`)
+3. Auto-detection (e.g., `NODE_ENV=test`)
+4. Default values
+
 ## Known Limitations
 
 1. **No Windows PowerShell activate script**: Only bash/zsh/fish supported

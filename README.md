@@ -146,6 +146,45 @@ source venv/bin/activate
 npm install
 ```
 
+## Configuration
+
+### Environment Variables
+
+`nvenv` can be configured using environment variables:
+
+- **`NVENV_SILENT`**: Set to `1` to suppress progress output during environment creation
+- **`NVENV_MIRROR`**: Custom mirror URL for Node.js downloads (default: `https://nodejs.org/dist`)
+
+### Using a Custom Mirror
+
+For faster downloads in certain regions, you can use a mirror:
+
+```bash
+# China mirror (npmmirror/Taobao)
+export NVENV_MIRROR=https://npmmirror.com/mirrors/node
+npx nvenv --node=18.20.0 venv
+
+# Or set for a single command
+NVENV_MIRROR=https://npmmirror.com/mirrors/node npx nvenv --node=18.20.0 venv
+```
+
+**Popular mirrors:**
+- China (npmmirror): `https://npmmirror.com/mirrors/node`
+- China (Tencent): `https://mirrors.cloud.tencent.com/nodejs-release`
+- Europe: Check regional mirrors based on your location
+
+### Silent Mode
+
+Suppress verbose download progress output:
+
+```bash
+# Silent mode for CI/CD
+NVENV_SILENT=1 npx nvenv --node=18.20.0 venv
+
+# Or use the --silent flag
+npx nvenv --silent --node=18.20.0 venv
+```
+
 ## Comparison with Other Tools
 
 | Feature | nvenv | nvm | asdf | mise | volta |
