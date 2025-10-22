@@ -141,10 +141,10 @@ describe('env module', () => {
   });
 
   describe('createEnvironment (integration test)', () => {
-    it('should create a complete working environment', { timeout: 0 }, async function() {
+    it('should create a complete working environment', { timeout: Number.POSITIVE_INFINITY }, async function() {
       // This is a slow test - disable timeout
-      this.timeout = 0; // Unlimited (Node.js test runner)
-      // { timeout: 0 } in test options for Bun
+      this.timeout = Number.POSITIVE_INFINITY; // Unlimited (Node.js test runner)
+      // { timeout: Number.POSITIVE_INFINITY } in test options for Bun
 
       const envPath = path.join(testDir, 'integration-venv');
 
