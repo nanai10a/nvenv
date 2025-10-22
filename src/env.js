@@ -71,8 +71,16 @@ function createSymlink(target, link, options = {}) {
       console.warn(`Warning: Could not create symlink ${link}: ${error.message}`);
     }
     // On Windows or if symlink fails, create a simple wrapper script instead
-    const ext = process.platform === 'win32' ? '.cmd' : '';
-    const wrapperPath = link + ext;
+    let wrapperPath = link;
+
+    // Add extension only if link doesn't already have an executable extension
+    if (process.platform === 'win32') {
+      const ext = path.extname(link).toLowerCase();
+      if (!['.exe', '.cmd', '.bat', '.ps1'].includes(ext)) {
+        wrapperPath = link + '.cmd';
+      }
+    }
+
     const wrapperContent = process.platform === 'win32'
       ? `@echo off\r\n"${target}" %*`
       : `#!/bin/sh\nexec "${target}" "$@"`;
@@ -93,32 +101,54 @@ function createSymlink(target, link, options = {}) {
 function createBinSymlinks(envPath, nodePath, options = {}) {
   const silent = shouldBeSilent(options);
   const binDir = path.join(envPath, 'bin');
-  const nodeBinDir = path.join(nodePath, 'bin');
 
-  // List of binaries to symlink
-  // On Windows: node.exe, npm.cmd, npx.cmd
-  // On Unix: node, npm, npx
-  const binaries = process.platform === 'win32'
-    ? [
-        { name: 'node', source: 'node.exe' },
-        { name: 'npm', source: 'npm.cmd' },
-        { name: 'npx', source: 'npx.cmd' }
-      ]
-    : [
-        { name: 'node', source: 'node' },
-        { name: 'npm', source: 'npm' },
-        { name: 'npx', source: 'npx' }
-      ];
+  // Windows: no bin/ subdirectory, executables are in nodePath directly
+  // Unix: executables are in nodePath/bin/
+  const nodeBinDir = process.platform === 'win32'
+    ? nodePath
+    : path.join(nodePath, 'bin');
 
-  binaries.forEach(({ name, source }) => {
-    const sourceBinary = path.join(nodeBinDir, source);
-    const targetLink = path.join(binDir, name);
+  if (!fs.existsSync(nodeBinDir)) {
+    return;
+  }
 
-    if (fs.existsSync(sourceBinary)) {
-      createSymlink(sourceBinary, targetLink, options);
-      if (!silent) {
-        console.log(`Created symlink: ${name}`);
+  const files = fs.readdirSync(nodeBinDir);
+
+  files.forEach(file => {
+    const sourcePath = path.join(nodeBinDir, file);
+    const stat = fs.statSync(sourcePath);
+
+    // Skip directories
+    if (!stat.isFile()) {
+      return;
+    }
+
+    // Windows: filter executable files
+    if (process.platform === 'win32') {
+      const ext = path.extname(file).toLowerCase();
+      const basename = path.basename(file, ext);
+
+      // Include files with executable extensions
+      if (['.exe', '.cmd', '.bat', '.ps1'].includes(ext)) {
+        // OK
       }
+      // Include extension-less files if corresponding .cmd exists
+      // (POSIX scripts for Git Bash, WSL, etc.)
+      else if (!ext && fs.existsSync(path.join(nodeBinDir, basename + '.cmd'))) {
+        // OK
+      }
+      else {
+        return; // Skip non-executable files
+      }
+    }
+
+    // Create symlink with original filename (including extension)
+    // Windows PATHEXT allows running without extension (e.g., 'npm' finds 'npm.cmd')
+    const targetLink = path.join(binDir, file);
+
+    createSymlink(sourcePath, targetLink, options);
+    if (!silent) {
+      console.log(`Created symlink: ${file}`);
     }
   });
 }
