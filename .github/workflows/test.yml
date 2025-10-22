@@ -31,6 +31,8 @@ jobs:
 
       - name: Run unit tests
         run: npm test
+        env:
+          NVENV_SILENT: 1
 
       - name: Create test environment
         shell: bash

@@ -19,6 +19,8 @@ jobs:
 
       - name: Run tests
         run: npm test
+        env:
+          NVENV_SILENT: 1
 
       - name: Test package creation
         run: |
