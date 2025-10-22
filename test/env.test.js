@@ -111,14 +111,22 @@ describe('env module', () => {
 
       // Create a mock Node.js installation
       const nodePath = path.join(envPath, 'lib', 'node-v18.20.0');
-      const nodeBinDir = path.join(nodePath, 'bin');
+
+      // Windows: no bin/ subdirectory, executables in top-level
+      // Unix: executables in bin/ subdirectory
+      const nodeBinDir = process.platform === 'win32'
+        ? nodePath
+        : path.join(nodePath, 'bin');
       fs.mkdirSync(nodeBinDir, { recursive: true });
 
-      // Create mock binaries (platform-specific names)
+      // Create mock binaries (platform-specific names and locations)
       if (process.platform === 'win32') {
         fs.writeFileSync(path.join(nodeBinDir, 'node.exe'), '@echo off\r\necho node');
         fs.writeFileSync(path.join(nodeBinDir, 'npm.cmd'), '@echo off\r\necho npm');
         fs.writeFileSync(path.join(nodeBinDir, 'npx.cmd'), '@echo off\r\necho npx');
+        // POSIX scripts for Git Bash/WSL
+        fs.writeFileSync(path.join(nodeBinDir, 'npm'), '#!/bin/sh\necho npm');
+        fs.writeFileSync(path.join(nodeBinDir, 'npx'), '#!/bin/sh\necho npx');
       } else {
         fs.writeFileSync(path.join(nodeBinDir, 'node'), '#!/bin/sh\necho node');
         fs.writeFileSync(path.join(nodeBinDir, 'npm'), '#!/bin/sh\necho npm');
