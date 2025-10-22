@@ -72,7 +72,10 @@ function getNodeDownloadInfo(version) {
   const distPlatform = platformMap[platform];
 
   const filename = `node-v${normalizedVersion}-${distPlatform}-${arch}`;
-  const url = `https://nodejs.org/dist/v${normalizedVersion}/${filename}.${ext}`;
+
+  // Support custom mirror via NVENV_MIRROR environment variable
+  const baseUrl = process.env.NVENV_MIRROR || 'https://nodejs.org/dist';
+  const url = `${baseUrl}/v${normalizedVersion}/${filename}.${ext}`;
 
   return {
     url,
