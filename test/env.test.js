@@ -114,29 +114,36 @@ describe('env module', () => {
       const nodeBinDir = path.join(nodePath, 'bin');
       fs.mkdirSync(nodeBinDir, { recursive: true });
 
-      // Create mock binaries
-      fs.writeFileSync(path.join(nodeBinDir, 'node'), '#!/bin/sh\necho node');
-      fs.writeFileSync(path.join(nodeBinDir, 'npm'), '#!/bin/sh\necho npm');
-      fs.writeFileSync(path.join(nodeBinDir, 'npx'), '#!/bin/sh\necho npx');
+      // Create mock binaries (platform-specific names)
+      if (process.platform === 'win32') {
+        fs.writeFileSync(path.join(nodeBinDir, 'node.exe'), '@echo off\r\necho node');
+        fs.writeFileSync(path.join(nodeBinDir, 'npm.cmd'), '@echo off\r\necho npm');
+        fs.writeFileSync(path.join(nodeBinDir, 'npx.cmd'), '@echo off\r\necho npx');
+      } else {
+        fs.writeFileSync(path.join(nodeBinDir, 'node'), '#!/bin/sh\necho node');
+        fs.writeFileSync(path.join(nodeBinDir, 'npm'), '#!/bin/sh\necho npm');
+        fs.writeFileSync(path.join(nodeBinDir, 'npx'), '#!/bin/sh\necho npx');
+      }
 
       createBinSymlinks(envPath, nodePath);
 
       const binDir = path.join(envPath, 'bin');
 
-      // Check that symlinks or wrapper scripts exist
-      // On some systems symlinks work, on others we use wrapper scripts
-      assert.ok(
-        fs.existsSync(path.join(binDir, 'node')) ||
-        fs.existsSync(path.join(binDir, 'node.cmd'))
-      );
-      assert.ok(
-        fs.existsSync(path.join(binDir, 'npm')) ||
-        fs.existsSync(path.join(binDir, 'npm.cmd'))
-      );
-      assert.ok(
-        fs.existsSync(path.join(binDir, 'npx')) ||
-        fs.existsSync(path.join(binDir, 'npx.cmd'))
-      );
+      // Check that symlinks or wrapper scripts exist with correct names
+      if (process.platform === 'win32') {
+        // Windows: check for .exe and .cmd files (and extension-less POSIX scripts)
+        assert.ok(fs.existsSync(path.join(binDir, 'node.exe')));
+        assert.ok(fs.existsSync(path.join(binDir, 'npm.cmd')));
+        assert.ok(fs.existsSync(path.join(binDir, 'npx.cmd')));
+        // Extension-less POSIX scripts should also be copied
+        assert.ok(fs.existsSync(path.join(binDir, 'npm')));
+        assert.ok(fs.existsSync(path.join(binDir, 'npx')));
+      } else {
+        // Unix: check for extension-less files only
+        assert.ok(fs.existsSync(path.join(binDir, 'node')));
+        assert.ok(fs.existsSync(path.join(binDir, 'npm')));
+        assert.ok(fs.existsSync(path.join(binDir, 'npx')));
+      }
     });
   });
 
@@ -163,13 +170,15 @@ describe('env module', () => {
 
       // Verify binaries exist
       const binDir = path.join(envPath, 'bin');
+      const nodeBinaryName = process.platform === 'win32' ? 'node.exe' : 'node';
+      const nodeBinary = path.join(binDir, nodeBinaryName);
+
       assert.ok(
-        fs.existsSync(path.join(binDir, 'node')) ||
-        fs.existsSync(path.join(binDir, 'node.cmd'))
+        fs.existsSync(nodeBinary) ||
+        fs.existsSync(nodeBinary + '.cmd')
       );
 
       // Verify Node.js is executable and has correct version
-      const nodeBinary = path.join(binDir, 'node');
       if (fs.existsSync(nodeBinary)) {
         const version = execSync(`"${nodeBinary}" --version`, { encoding: 'utf8' }).trim();
         assert.strictEqual(version, 'v18.20.0');
