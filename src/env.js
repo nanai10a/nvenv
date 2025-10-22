@@ -314,13 +314,14 @@ async function createEnvironment(version, envPath, options = {}) {
   // Find extracted Node.js directory
   const nodeDir = findNodeDirectory(extractDir);
 
-  // Move to lib directory
+  // Move to lib directory (cross-device compatible)
   const libPath = path.join(envPath, 'lib', `node-v${downloadInfo.version}`);
   if (fs.existsSync(libPath)) {
     fs.rmSync(libPath, { recursive: true, force: true });
   }
 
-  fs.renameSync(nodeDir, libPath);
+  fs.cpSync(nodeDir, libPath, { recursive: true });
+  fs.rmSync(nodeDir, { recursive: true, force: true });
   if (!silent) {
     console.log(`Installed Node.js to: ${libPath}`);
   }
