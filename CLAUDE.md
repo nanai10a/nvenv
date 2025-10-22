@@ -75,11 +75,15 @@ cli.js (entry point)
   ├── lib/          # Actual Node.js installation
   └── .nvenv        # Metadata JSON
   ```
-- Creates symlinks for: node, npm, npx
+- **Windows**: Copies entire Node.js installation to `bin/` (Python venv approach)
+- **Unix**: Creates symlinks for node, npm, npx executables
 - Generates activate scripts for bash/zsh and fish
 - Saves metadata: version, platform, arch, creation timestamp
 
-**Key implementation detail**: On Windows or if symlinks fail, creates wrapper scripts instead.
+**Key implementation detail**: Windows uses full copy instead of symlinks because:
+1. npm.cmd/npx.cmd use `%~dp0` to locate node_modules, which breaks with symlinks/wrappers
+2. Symlinks on Windows require admin privileges or Developer Mode
+3. Python's venv uses the same approach with proven reliability
 
 #### `src/cli.js`
 - Argument parsing: `--node=<version> <path>`
@@ -115,17 +119,28 @@ Examples:
 - Linux x64: `node-v18.20.0-linux-x64.tar.gz`
 - Windows x64: `node-v18.20.0-win32-x64.zip`
 
-### Symlink Strategy
+### Binary Linking Strategy
 
-Symlinks point to versioned installation:
+**Unix (macOS/Linux)**: Symlinks to versioned installation
 ```
 bin/node -> ../lib/node-v18.20.0/bin/node
+bin/npm -> ../lib/node-v18.20.0/bin/npm
 ```
 
-Benefits:
-- Multiple versions can coexist in `lib/`
-- Future enhancement: switch versions by updating symlinks
-- Absolute paths stored in symlinks (not relative) for reliability
+**Windows**: Full copy of Node.js installation
+```
+bin/
+  node.exe          (copied from lib/node-v18.20.0/)
+  npm.cmd           (copied)
+  npx.cmd           (copied)
+  node_modules/     (copied)
+  [all other files] (copied)
+```
+
+Benefits of this approach:
+- **Unix**: Multiple versions can coexist in `lib/`, symlinks enable easy switching
+- **Windows**: npm.cmd works correctly (uses %~dp0 to find node_modules)
+- Follows Python venv's proven cross-platform strategy
 
 ### Metadata Format
 
