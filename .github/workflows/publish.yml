@@ -89,7 +89,7 @@ jobs:
     needs: [create-release, test]
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write  # Required to update release
       id-token: write  # Required for provenance
 
     steps:
