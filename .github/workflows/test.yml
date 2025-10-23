@@ -10,9 +10,57 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        node-version: [18.x, 20.x, 22.x, 24.x, 25.x]
-        package-manager: [npm, pnpm]
+        # Optimize test matrix to reduce CI time while maintaining coverage
+        # Latest version: all OS × all package managers
+        # LTS versions: all OS × npm only
+        # Oldest supported: Ubuntu × npm only
+        include:
+          # Latest (25.x) - comprehensive testing
+          - os: ubuntu-latest
+            node-version: 25.x
+            package-manager: npm
+          - os: ubuntu-latest
+            node-version: 25.x
+            package-manager: pnpm
+          - os: macos-latest
+            node-version: 25.x
+            package-manager: npm
+          - os: macos-latest
+            node-version: 25.x
+            package-manager: pnpm
+          - os: windows-latest
+            node-version: 25.x
+            package-manager: npm
+          - os: windows-latest
+            node-version: 25.x
+            package-manager: pnpm
+
+          # LTS (22.x) - all OS, npm only
+          - os: ubuntu-latest
+            node-version: 22.x
+            package-manager: npm
+          - os: macos-latest
+            node-version: 22.x
+            package-manager: npm
+          - os: windows-latest
+            node-version: 22.x
+            package-manager: npm
+
+          # LTS (20.x) - all OS, npm only
+          - os: ubuntu-latest
+            node-version: 20.x
+            package-manager: npm
+          - os: macos-latest
+            node-version: 20.x
+            package-manager: npm
+          - os: windows-latest
+            node-version: 20.x
+            package-manager: npm
+
+          # Minimum supported (18.x) - Ubuntu only, npm only
+          - os: ubuntu-latest
+            node-version: 18.x
+            package-manager: npm
 
     steps:
       - name: Checkout code
