@@ -1,7 +1,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { shouldBeSilent, log, isWindows } = require('./utils');
+const { log, isWindows } = require('./utils');
 
 /**
  * Extract archive file to destination directory
@@ -11,8 +11,6 @@ const { shouldBeSilent, log, isWindows } = require('./utils');
  * @returns {Promise<void>}
  */
 async function extractArchive(archivePath, destDir, options = {}) {
-  const silent = shouldBeSilent(options);
-
   if (!fs.existsSync(archivePath)) {
     throw new Error(`Archive file not found: ${archivePath}`);
   }

@@ -4,7 +4,7 @@ const os = require('os');
 const { downloadFile } = require('./download');
 const { extractArchive, findNodeDirectory } = require('./extract');
 const { getNodeDownloadInfo, getNodeBinDir, isExecutableFile } = require('./platform');
-const { shouldBeSilent, log, warn, isWindows } = require('./utils');
+const { log, warn, isWindows } = require('./utils');
 
 /**
  * Create virtual environment directory structure
@@ -350,8 +350,8 @@ async function createEnvironment(version, envPath, options = {}) {
   fs.unlinkSync(archivePath);
   fs.rmSync(extractDir, { recursive: true, force: true });
 
-  log(`\n✓ Environment created successfully!`, options);
-  log(`\nTo activate the environment, run:`, options);
+  log('\n✓ Environment created successfully!', options);
+  log('\nTo activate the environment, run:', options);
   log(`  source ${path.join(envPath, 'bin', 'activate')}`, options);
 }
 

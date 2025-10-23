@@ -27,7 +27,7 @@ function getArch() {
   // Map Node.js arch values to download URL values
   const archMap = {
     'x64': 'x64',
-    'arm64': 'arm64',
+    'arm64': 'arm64'
   };
 
   if (!archMap[arch]) {

@@ -20,7 +20,7 @@ describe('Node.js archive structure', () => {
   });
 
   versions.forEach(version => {
-    it(`should have correct structure for v${version} on ${process.platform}-${process.arch}`, { timeout: Number.POSITIVE_INFINITY }, async function() {
+    it(`should have correct structure for v${version} on ${process.platform}-${process.arch}`, { timeout: Number.POSITIVE_INFINITY }, async function () {
       this.timeout = Number.POSITIVE_INFINITY; // Unlimited timeout for downloads
 
       // Create test directory
