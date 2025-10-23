@@ -20,4 +20,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions CI/CD workflows with automated testing and linting
 - Python venv-like `activate`/`deactivate` workflow
 
-[0.1.0-rc.1]: https://github.com/nanai10a/nvenv/releases/tag/v0.1.0-rc.1
+[0.1.0-rc.1]: https://github.com/nanai10a/nvenv/releases/tag/0.1.0-rc.1
