@@ -35,6 +35,8 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "@stylistic/eslint-plugin": "^5.5.0",
+    "eslint": "^9.38.0"
+  }
 }
