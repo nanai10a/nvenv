@@ -4,6 +4,24 @@ on:
   push:
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 25.x
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run linter
+        run: npm run lint
+
   test-node:
     name: Test on Node.js ${{ matrix.node-version }} / ${{ matrix.os }} / ${{ matrix.package-manager }}
     runs-on: ${{ matrix.os }}
