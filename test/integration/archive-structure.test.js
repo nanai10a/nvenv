@@ -2,9 +2,9 @@ const { describe, it, after } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { getNodeDownloadInfo } = require('../src/platform.js');
-const { downloadFile } = require('../src/download.js');
-const { extractArchive } = require('../src/extract.js');
+const { getNodeDownloadInfo } = require('../../src/platform.js');
+const { downloadFile } = require('../../src/download.js');
+const { extractArchive } = require('../../src/extract.js');
 
 describe('Node.js archive structure', () => {
   const testDir = path.join(__dirname, '.test-archive');
