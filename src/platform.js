@@ -87,9 +87,70 @@ function getNodeDownloadInfo(version) {
   };
 }
 
+/**
+ * Get the directory where Node.js binaries are located after extraction
+ * @param {string} nodePath - Path to extracted Node.js installation
+ * @returns {string} Path to bin directory
+ */
+function getNodeBinDir(nodePath) {
+  // Windows: no bin/ subdirectory, executables are in nodePath directly
+  // Unix: executables are in nodePath/bin/
+  return process.platform === 'win32'
+    ? nodePath
+    : require('path').join(nodePath, 'bin');
+}
+
+/**
+ * Get executable file extensions for current platform
+ * @returns {string[]} Array of executable extensions (including dot)
+ */
+function getExecutableExtensions() {
+  if (process.platform === 'win32') {
+    return ['.exe', '.cmd', '.bat', '.ps1'];
+  }
+  return []; // Unix has no specific extensions
+}
+
+/**
+ * Check if a file is executable based on platform conventions
+ * @param {string} filename - Name of the file
+ * @param {string} binDir - Directory containing the file
+ * @returns {boolean} True if file should be treated as executable
+ */
+function isExecutableFile(filename, binDir) {
+  const path = require('path');
+  const ext = path.extname(filename).toLowerCase();
+  const basename = path.basename(filename, ext);
+
+  if (process.platform === 'win32') {
+    // Windows: check for executable extensions
+    const execExts = getExecutableExtensions();
+
+    // Include files with executable extensions
+    if (execExts.includes(ext)) {
+      return true;
+    }
+
+    // Include extension-less files if corresponding .cmd exists
+    // (POSIX scripts for Git Bash, WSL, etc.)
+    if (!ext) {
+      const fs = require('fs');
+      return fs.existsSync(path.join(binDir, basename + '.cmd'));
+    }
+
+    return false;
+  }
+
+  // Unix: all files in bin/ are potentially executable
+  return true;
+}
+
 module.exports = {
   getPlatform,
   getArch,
   getExtension,
-  getNodeDownloadInfo
+  getNodeDownloadInfo,
+  getNodeBinDir,
+  getExecutableExtensions,
+  isExecutableFile
 };

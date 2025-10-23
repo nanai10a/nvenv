@@ -5,7 +5,7 @@ const path = require('path');
 const os = require('os');
 const { downloadFile } = require('./download');
 const { extractArchive, findNodeDirectory } = require('./extract');
-const { getNodeDownloadInfo } = require('./platform');
+const { getNodeDownloadInfo, getNodeBinDir, isExecutableFile } = require('./platform');
 const { shouldBeSilent, log, warn, isWindows } = require('./utils');
 
 /**
@@ -73,12 +73,7 @@ function createSymlink(target, link, options = {}) {
  */
 function createBinSymlinks(envPath, nodePath, options = {}) {
   const binDir = path.join(envPath, 'bin');
-
-  // Windows: no bin/ subdirectory, executables are in nodePath directly
-  // Unix: executables are in nodePath/bin/
-  const nodeBinDir = process.platform === 'win32'
-    ? nodePath
-    : path.join(nodePath, 'bin');
+  const nodeBinDir = getNodeBinDir(nodePath);
 
   if (!fs.existsSync(nodeBinDir)) {
     return;
@@ -104,23 +99,9 @@ function createBinSymlinks(envPath, nodePath, options = {}) {
       return;
     }
 
-    // Windows: filter executable files
-    if (process.platform === 'win32') {
-      const ext = path.extname(file).toLowerCase();
-      const basename = path.basename(file, ext);
-
-      // Include files with executable extensions
-      if (['.exe', '.cmd', '.bat', '.ps1'].includes(ext)) {
-        // OK
-      }
-      // Include extension-less files if corresponding .cmd exists
-      // (POSIX scripts for Git Bash, WSL, etc.)
-      else if (!ext && fs.existsSync(path.join(nodeBinDir, basename + '.cmd'))) {
-        // OK
-      }
-      else {
-        return; // Skip non-executable files
-      }
+    // Skip non-executable files (platform-specific filtering)
+    if (!isExecutableFile(file, nodeBinDir)) {
+      return;
     }
 
     // Create symlink with original filename (including extension)
