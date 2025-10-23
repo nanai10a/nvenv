@@ -32,18 +32,31 @@ nvenv solves this by treating Node.js like project dependencies (similar to node
 ```
 cli.js (entry point)
   └─> env.js (orchestration)
-        ├─> platform.js (detect OS/arch, build URLs)
+        ├─> platform.js (detect OS/arch, build URLs, platform-specific helpers)
         ├─> download.js (fetch Node.js binaries)
-        └─> extract.js (unpack archives)
+        ├─> extract.js (unpack archives)
+        └─> utils.js (shared utilities: logging, silent mode, platform checks)
 ```
 
 ### Module Responsibilities
+
+#### `src/utils.js`
+- **Purpose**: Shared utility functions used across all modules
+- **Key functions**:
+  - `shouldBeSilent(options)`: Centralized silent mode detection
+  - `isWindows()`: Platform detection helper
+  - `log()`, `warn()`, `error()`: Logging helpers with silent mode support
+- **Design rationale**: Eliminates code duplication (DRY principle)
 
 #### `src/platform.js`
 - Detects `process.platform` and `process.arch`
 - Maps to Node.js download URL conventions
 - Supported: darwin/linux/win32 on x64/arm64
 - Returns download info: `{ url, filename, extension, platform, arch, version }`
+- Platform-specific helpers:
+  - `getNodeBinDir(nodePath)`: Returns correct bin directory for platform
+  - `getExecutableExtensions()`: Returns platform-specific executable extensions
+  - `isExecutableFile(filename, binDir)`: Determines if file is executable
 
 **Key implementation detail**: Version normalization removes 'v' prefix if present.
 
@@ -79,6 +92,8 @@ cli.js (entry point)
 - **Unix**: Creates symlinks for node, npm, npx executables
 - Generates activate scripts for bash/zsh and fish
 - Saves metadata: version, platform, arch, creation timestamp
+- Uses shared utilities from `utils.js` for consistent logging and platform detection
+- Uses platform helpers from `platform.js` for cross-platform compatibility
 
 **Key implementation detail**: Windows uses full copy instead of symlinks because:
 1. npm.cmd/npx.cmd use `%~dp0` to locate node_modules, which breaks with symlinks/wrappers
@@ -297,6 +312,36 @@ function deactivate {
 
 ## Testing Strategy
 
+### Test Organization
+
+Tests are organized into two categories:
+
+**Unit Tests** (`test/*.test.js`):
+- Fast, isolated tests of individual functions
+- Mock external dependencies where possible
+- Run with: `npm run test:unit`
+- Files:
+  - `cli.test.js`: CLI argument parsing
+  - `platform.test.js`: Platform detection and URL generation
+  - `download.test.js`: Download functionality (uses small real files)
+  - `extract.test.js`: Archive extraction
+  - `env.test.js`: Environment structure creation
+
+**Integration Tests** (`test/integration/*.test.js`):
+- Slow, end-to-end tests with real downloads
+- Require network access and significant disk space
+- Run with: `npm run test:integration`
+- Files:
+  - `env-integration.test.js`: Full environment creation with Node.js download
+  - `archive-structure.test.js`: Validates Node.js archive structure across versions
+
+**Running Tests**:
+```bash
+npm run test:unit          # Fast unit tests only
+npm run test:integration   # Slow integration tests only
+npm test                   # All tests (default)
+```
+
 ### Manual Testing Checklist
 
 1. **Environment creation**:
@@ -494,9 +539,9 @@ ENV PATH="/app/venv/bin:$PATH"
 RUN npm install
 ```
 
-## Version History Context
+## Version Management
 
-- v0.1.0 (initial): Basic functionality with bash/zsh/fish support
+- Current version: v0.1.0 (unreleased)
 - Future versions should maintain backward compatibility with .nvenv metadata format
 
 ## Related Projects and Inspirations
@@ -545,7 +590,15 @@ If making breaking changes:
 - Consider backward compatibility for .nvenv format
 - Provide migration script if possible
 
+## Coding Guidelines
+
+1. **DRY Principle**: Shared code lives in `utils.js` or as helpers in appropriate modules
+2. **Platform Abstraction**: Platform-specific logic should use helpers from `platform.js`
+3. **Silent Mode**: All user-facing output should use logging helpers from `utils.js`
+4. **Testing**: Unit tests for logic, integration tests for end-to-end flows
+5. **Zero Dependencies**: Use only Node.js standard library
+
 ---
 
-**Last Updated**: 2025-10-20 by Claude Sonnet 4.5
-**Generated With**: Claude Code (claude-sonnet-4-5-20250929)
+**Last Updated**: 2025-10-23
+**Maintained By**: Claude Code (claude-sonnet-4-5-20250929)
