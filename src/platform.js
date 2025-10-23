@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /**
  * Platform detection module
  * Detects OS platform and architecture for downloading correct Node.js binaries

@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -85,7 +83,6 @@ function createBinSymlinks(envPath, nodePath, options = {}) {
     const sourcePath = path.join(nodeBinDir, file);
 
     // Try to stat the file, skip if it doesn't exist or isn't accessible
-    // (broken symlinks, permission issues, etc.)
     let stat;
     try {
       stat = fs.statSync(sourcePath);
@@ -105,9 +102,7 @@ function createBinSymlinks(envPath, nodePath, options = {}) {
     }
 
     // Create symlink with original filename (including extension)
-    // Windows PATHEXT allows running without extension (e.g., 'npm' finds 'npm.cmd')
     const targetLink = path.join(binDir, file);
-
     createSymlink(sourcePath, targetLink, options);
     log(`Created symlink: ${file}`, options);
   });
