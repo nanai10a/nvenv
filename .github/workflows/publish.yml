@@ -3,7 +3,8 @@ name: Publish to npm
 on:
   push:
     tags:
-      - 'v*'
+      - '*.*.*'
+      - '*.*.*-*'
 
 jobs:
   create-release:
@@ -18,9 +19,9 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          TAG=${GITHUB_REF#refs/tags/v}
+          TAG=${GITHUB_REF#refs/tags/}
           echo "version=${TAG}" >> $GITHUB_OUTPUT
-          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Extract CHANGELOG for version
         id: changelog
@@ -112,7 +113,7 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          TAG=${GITHUB_REF#refs/tags/v}
+          TAG=${GITHUB_REF#refs/tags/}
           echo "version=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Determine npm tag
@@ -147,7 +148,7 @@ jobs:
               repo: context.repo.repo
             });
 
-            const release = releases.data.find(r => r.tag_name === `v${version}`);
+            const release = releases.data.find(r => r.tag_name === version);
 
             if (release) {
               await github.rest.repos.createReleaseDiscussionComment({
