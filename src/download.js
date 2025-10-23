@@ -3,30 +3,7 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
-
-/**
- * Check if silent mode should be enabled
- * @param {object} options - Options object
- * @returns {boolean}
- */
-function shouldBeSilent(options = {}) {
-  // Explicit option takes precedence
-  if (options.silent !== undefined) {
-    return options.silent;
-  }
-
-  // Check environment variable
-  if (process.env.NVENV_SILENT === '1' || process.env.NVENV_SILENT === 'true') {
-    return true;
-  }
-
-  // Check if running in test mode
-  if (process.env.NODE_ENV === 'test') {
-    return true;
-  }
-
-  return false;
-}
+const { shouldBeSilent, log } = require('./utils');
 
 /**
  * Download a file from URL to destination with progress indicator
@@ -45,10 +22,8 @@ function downloadFile(url, destPath, options = {}) {
       fs.mkdirSync(destDir, { recursive: true });
     }
 
-    if (!silent) {
-      console.log(`Downloading from: ${url}`);
-      console.log(`Saving to: ${destPath}`);
-    }
+    log(`Downloading from: ${url}`, options);
+    log(`Saving to: ${destPath}`, options);
 
     const file = fs.createWriteStream(destPath);
     let downloadedBytes = 0;
@@ -61,9 +36,7 @@ function downloadFile(url, destPath, options = {}) {
         fs.unlinkSync(destPath);
 
         const redirectUrl = response.headers.location;
-        if (!silent) {
-          console.log(`Following redirect to: ${redirectUrl}`);
-        }
+        log(`Following redirect to: ${redirectUrl}`, options);
 
         return downloadFile(redirectUrl, destPath, options)
           .then(resolve)
@@ -97,9 +70,7 @@ function downloadFile(url, destPath, options = {}) {
 
       file.on('finish', () => {
         file.close();
-        if (!silent) {
-          console.log('\nDownload completed!');
-        }
+        log('\nDownload completed!', options);
         resolve();
       });
     });

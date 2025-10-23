@@ -6,30 +6,7 @@ const os = require('os');
 const { downloadFile } = require('./download');
 const { extractArchive, findNodeDirectory } = require('./extract');
 const { getNodeDownloadInfo } = require('./platform');
-
-/**
- * Check if silent mode should be enabled
- * @param {object} options - Options object
- * @returns {boolean}
- */
-function shouldBeSilent(options = {}) {
-  // Explicit option takes precedence
-  if (options.silent !== undefined) {
-    return options.silent;
-  }
-
-  // Check environment variable
-  if (process.env.NVENV_SILENT === '1' || process.env.NVENV_SILENT === 'true') {
-    return true;
-  }
-
-  // Check if running in test mode
-  if (process.env.NODE_ENV === 'test') {
-    return true;
-  }
-
-  return false;
-}
+const { shouldBeSilent, log, warn, isWindows } = require('./utils');
 
 /**
  * Create virtual environment directory structure
@@ -56,8 +33,6 @@ function createEnvStructure(envPath) {
  * @param {object} options - Options { silent: boolean }
  */
 function createSymlink(target, link, options = {}) {
-  const silent = shouldBeSilent(options);
-
   // Remove existing symlink if it exists
   if (fs.existsSync(link)) {
     fs.unlinkSync(link);
@@ -66,27 +41,25 @@ function createSymlink(target, link, options = {}) {
   try {
     fs.symlinkSync(target, link);
   } catch (error) {
-    // console.warn is always shown (important warnings)
-    if (!silent) {
-      console.warn(`Warning: Could not create symlink ${link}: ${error.message}`);
-    }
+    // Warn about symlink creation failure
+    warn(`Warning: Could not create symlink ${link}: ${error.message}`, options);
     // On Windows or if symlink fails, create a simple wrapper script instead
     let wrapperPath = link;
 
     // Add extension only if link doesn't already have an executable extension
-    if (process.platform === 'win32') {
+    if (isWindows()) {
       const ext = path.extname(link).toLowerCase();
       if (!['.exe', '.cmd', '.bat', '.ps1'].includes(ext)) {
         wrapperPath = link + '.cmd';
       }
     }
 
-    const wrapperContent = process.platform === 'win32'
+    const wrapperContent = isWindows()
       ? `@echo off\r\n"${target}" %*`
       : `#!/bin/sh\nexec "${target}" "$@"`;
 
     fs.writeFileSync(wrapperPath, wrapperContent);
-    if (process.platform !== 'win32') {
+    if (!isWindows()) {
       fs.chmodSync(wrapperPath, 0o755);
     }
   }
@@ -99,7 +72,6 @@ function createSymlink(target, link, options = {}) {
  * @param {object} options - Options { silent: boolean }
  */
 function createBinSymlinks(envPath, nodePath, options = {}) {
-  const silent = shouldBeSilent(options);
   const binDir = path.join(envPath, 'bin');
 
   // Windows: no bin/ subdirectory, executables are in nodePath directly
@@ -123,9 +95,7 @@ function createBinSymlinks(envPath, nodePath, options = {}) {
     try {
       stat = fs.statSync(sourcePath);
     } catch (error) {
-      if (!silent) {
-        console.warn(`Warning: Could not access ${file}: ${error.message}`);
-      }
+      warn(`Warning: Could not access ${file}: ${error.message}`, options);
       return;
     }
 
@@ -158,9 +128,7 @@ function createBinSymlinks(envPath, nodePath, options = {}) {
     const targetLink = path.join(binDir, file);
 
     createSymlink(sourcePath, targetLink, options);
-    if (!silent) {
-      console.log(`Created symlink: ${file}`);
-    }
+    log(`Created symlink: ${file}`, options);
   });
 }
 
@@ -290,22 +258,17 @@ set -gx _OLD_FISH_PROMPT_OVERRIDE "$VIRTUAL_ENV"
  * @param {object} options - Options { silent: boolean }
  */
 function createActivateScripts(envPath, options = {}) {
-  const silent = shouldBeSilent(options);
   const binDir = path.join(envPath, 'bin');
 
   // Bash/Zsh activate
   const bashScript = generateActivateScript(envPath, 'bash');
   fs.writeFileSync(path.join(binDir, 'activate'), bashScript);
-  if (!silent) {
-    console.log('Created activate script for bash/zsh');
-  }
+  log('Created activate script for bash/zsh', options);
 
   // Fish activate
   const fishScript = generateActivateScript(envPath, 'fish');
   fs.writeFileSync(path.join(binDir, 'activate.fish'), fishScript);
-  if (!silent) {
-    console.log('Created activate script for fish');
-  }
+  log('Created activate script for fish', options);
 }
 
 /**
@@ -315,7 +278,6 @@ function createActivateScripts(envPath, options = {}) {
  * @param {object} options - Options { silent: boolean }
  */
 function saveMetadata(envPath, info, options = {}) {
-  const silent = shouldBeSilent(options);
   const metadata = {
     version: info.version,
     platform: info.platform,
@@ -325,9 +287,7 @@ function saveMetadata(envPath, info, options = {}) {
 
   const metadataPath = path.join(envPath, '.nvenv');
   fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
-  if (!silent) {
-    console.log('Saved environment metadata');
-  }
+  log('Saved environment metadata', options);
 }
 
 /**
@@ -337,19 +297,13 @@ function saveMetadata(envPath, info, options = {}) {
  * @param {object} options - Options { silent: boolean }
  */
 async function createEnvironment(version, envPath, options = {}) {
-  const silent = shouldBeSilent(options);
-
-  if (!silent) {
-    console.log(`Creating nvenv environment at: ${envPath}`);
-    console.log(`Node.js version: ${version}\n`);
-  }
+  log(`Creating nvenv environment at: ${envPath}`, options);
+  log(`Node.js version: ${version}\n`, options);
 
   // Get download info
   const downloadInfo = getNodeDownloadInfo(version);
-  if (!silent) {
-    console.log(`Platform: ${downloadInfo.platform}-${downloadInfo.arch}`);
-    console.log(`Download URL: ${downloadInfo.url}\n`);
-  }
+  log(`Platform: ${downloadInfo.platform}-${downloadInfo.arch}`, options);
+  log(`Download URL: ${downloadInfo.url}\n`, options);
 
   // Create environment structure
   createEnvStructure(envPath);
@@ -375,13 +329,11 @@ async function createEnvironment(version, envPath, options = {}) {
 
   fs.cpSync(nodeDir, libPath, { recursive: true });
   fs.rmSync(nodeDir, { recursive: true, force: true });
-  if (!silent) {
-    console.log(`Installed Node.js to: ${libPath}`);
-  }
+  log(`Installed Node.js to: ${libPath}`, options);
 
   // Windows: Copy entire Node.js installation to bin/ (Python venv approach)
   // Unix: Create symlinks to executables in lib/
-  if (process.platform === 'win32') {
+  if (isWindows()) {
     const binDir = path.join(envPath, 'bin');
 
     // Remove existing bin directory contents (keep directory itself)
@@ -406,9 +358,7 @@ async function createEnvironment(version, envPath, options = {}) {
       fs.cpSync(srcPath, destPath, { recursive: true });
     });
 
-    if (!silent) {
-      console.log('Copied Node.js installation to bin/ (Windows)');
-    }
+    log('Copied Node.js installation to bin/ (Windows)', options);
   } else {
     // Unix: Create symlinks
     createBinSymlinks(envPath, libPath, options);
@@ -424,11 +374,9 @@ async function createEnvironment(version, envPath, options = {}) {
   fs.unlinkSync(archivePath);
   fs.rmSync(extractDir, { recursive: true, force: true });
 
-  if (!silent) {
-    console.log(`\n✓ Environment created successfully!`);
-    console.log(`\nTo activate the environment, run:`);
-    console.log(`  source ${path.join(envPath, 'bin', 'activate')}`);
-  }
+  log(`\n✓ Environment created successfully!`, options);
+  log(`\nTo activate the environment, run:`, options);
+  log(`  source ${path.join(envPath, 'bin', 'activate')}`, options);
 }
 
 module.exports = {

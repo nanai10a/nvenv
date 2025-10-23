@@ -3,30 +3,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-
-/**
- * Check if silent mode should be enabled
- * @param {object} options - Options object
- * @returns {boolean}
- */
-function shouldBeSilent(options = {}) {
-  // Explicit option takes precedence
-  if (options.silent !== undefined) {
-    return options.silent;
-  }
-
-  // Check environment variable
-  if (process.env.NVENV_SILENT === '1' || process.env.NVENV_SILENT === 'true') {
-    return true;
-  }
-
-  // Check if running in test mode
-  if (process.env.NODE_ENV === 'test') {
-    return true;
-  }
-
-  return false;
-}
+const { shouldBeSilent, log, isWindows } = require('./utils');
 
 /**
  * Extract archive file to destination directory
@@ -49,10 +26,8 @@ async function extractArchive(archivePath, destDir, options = {}) {
 
   const ext = path.extname(archivePath);
 
-  if (!silent) {
-    console.log(`Extracting archive: ${archivePath}`);
-    console.log(`Destination: ${destDir}`);
-  }
+  log(`Extracting archive: ${archivePath}`, options);
+  log(`Destination: ${destDir}`, options);
 
   try {
     if (ext === '.gz' || archivePath.endsWith('.tar.gz')) {
@@ -62,7 +37,7 @@ async function extractArchive(archivePath, destDir, options = {}) {
       });
     } else if (ext === '.zip') {
       // Extract zip using unzip command (Unix) or PowerShell (Windows)
-      if (process.platform === 'win32') {
+      if (isWindows()) {
         // Windows: use PowerShell with LiteralPath and Force flags
         execSync(
           `powershell.exe -NoProfile -Command "Expand-Archive -LiteralPath '${archivePath}' -DestinationPath '${destDir}' -Force"`,
@@ -78,9 +53,7 @@ async function extractArchive(archivePath, destDir, options = {}) {
       throw new Error(`Unsupported archive format: ${ext}`);
     }
 
-    if (!silent) {
-      console.log('Extraction completed!');
-    }
+    log('Extraction completed!', options);
   } catch (error) {
     throw new Error(`Failed to extract archive: ${error.message}`);
   }
