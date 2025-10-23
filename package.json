@@ -1,6 +1,6 @@
 {
   "name": "nvenv",
-  "version": "0.1.0",
+  "version": "0.1.0-rc.1",
   "description": "Python venv-like Node.js environment manager - project-local Node.js installation without global environment pollution",
   "main": "src/cli.js",
   "bin": {
