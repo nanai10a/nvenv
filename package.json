@@ -7,7 +7,9 @@
     "nvenv": "./src/cli.js"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "test:unit": "node --test test/*.test.js",
+    "test:integration": "node --test test/integration/*.test.js"
   },
   "keywords": [
     "node",
